@@ -5,19 +5,60 @@ import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { MailService } from '../mail/mail.service';
+import { UploadService } from '../upload/upload.service';
+import { PaginatedResponse } from '../../common/interfaces/pagination-response.interface';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private mail: MailService,
+    private upload: UploadService,
+  ) {}
 
-  async create(dto: CreateUserDto) {
+  async create(
+    dto: CreateUserDto,
+    options?: {
+      sendCredentialsEmail?: boolean;
+      plainPassword?: string;
+      file?: Express.Multer.File;
+    },
+  ) {
+    // Handle profile image upload if provided
+    let profileImageUrl: string | undefined;
+    if (options?.file) {
+      const uploadResult = await this.upload.upload(options.file);
+      // S3 returns 'url', local returns 'path'
+      profileImageUrl =
+        'url' in uploadResult ? uploadResult.url : uploadResult.path;
+    }
+
     // Hash the password before saving
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     const user = new this.userModel({
       ...dto,
       password: hashedPassword,
+      profileImage: profileImageUrl || dto.profileImage,
     });
-    return user.save();
+    const savedUser = await user.save();
+
+    // Only send credentials email if explicitly requested (for admin-created users)
+    if (options?.sendCredentialsEmail) {
+      const passwordToSend = options.plainPassword || dto.password;
+      this.mail
+        .sendUserCredentialsEmail(
+          savedUser.email,
+          passwordToSend,
+          savedUser.firstName,
+          savedUser.lastName,
+        )
+        .catch((error) => {
+          console.error('Failed to send credentials email:', error);
+        });
+    }
+
+    return savedUser;
   }
 
   async findAll(
@@ -25,7 +66,7 @@ export class UsersService {
     limit: number,
     role?: string,
     isActive?: boolean,
-  ) {
+  ): Promise<PaginatedResponse<User>> {
     const query: any = {};
     if (role) query.role = role;
     if (isActive !== undefined) query.isActive = isActive;

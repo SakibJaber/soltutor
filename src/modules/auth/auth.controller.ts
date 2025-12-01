@@ -6,7 +6,10 @@ import {
   UseGuards,
   Req,
   UnauthorizedException,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { GetUser } from '../../common/decorators/get-user.decorator';
@@ -21,8 +24,12 @@ export class AuthController {
 
   @Post('register')
   @Public()
-  async register(@Body() dto: RegisterDto) {
-    return await this.auth.register(dto);
+  @UseInterceptors(FileInterceptor('image'))
+  async register(
+    @Body() dto: RegisterDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return await this.auth.register(dto, file);
   }
 
   @Post('login')

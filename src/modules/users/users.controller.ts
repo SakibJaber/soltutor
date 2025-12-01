@@ -8,16 +8,18 @@ import {
   Param,
   Query,
   UseGuards,
-  DefaultValuePipe,
-  ParseIntPipe,
   Req,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 import { User } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 import { Role } from 'src/common/enum/user.role.enum';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { AuthGuard } from '@nestjs/passport';
@@ -30,23 +32,36 @@ export class UsersController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @Post()
-  async create(@Body() dto: CreateUserDto) {
-    return await this.usersService.create(dto);
+  @UseInterceptors(FileInterceptor('image'))
+  async create(
+    @Body() dto: CreateUserDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    // Capture plain password and request credentials email for admin-created users
+    return await this.usersService.create(dto, {
+      sendCredentialsEmail: true,
+      plainPassword: dto.password,
+      file,
+    });
   }
 
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @Get()
   async findAll(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query() paginationDto: PaginationDto,
     @Query('role') role?: string,
     @Query('isActive') isActive?: string,
   ) {
     const isActiveBoolean =
       isActive === 'true' ? true : isActive === 'false' ? false : undefined;
 
-    return await this.usersService.findAll(page, limit, role, isActiveBoolean);
+    return await this.usersService.findAll(
+      paginationDto.page ?? 1,
+      paginationDto.limit ?? 10,
+      role,
+      isActiveBoolean,
+    );
   }
 
   @Get('me')

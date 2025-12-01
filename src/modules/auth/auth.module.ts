@@ -6,6 +6,7 @@ import { UsersModule } from '../users/users.module';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { MailModule } from '../mail/mail.module';
+import { UploadModule } from '../upload/upload.module';
 import { JwtRefreshStrategy } from './strategy/jwt-refresh.strategy';
 import { TokenService } from './tokens/token.service';
 import { JwtAccessStrategy } from './strategy/jwt-access.strategy';
@@ -15,6 +16,7 @@ import { JwtAccessStrategy } from './strategy/jwt-access.strategy';
     UsersModule,
     PassportModule,
     MailModule,
+    UploadModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

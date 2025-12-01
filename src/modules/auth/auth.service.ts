@@ -9,6 +9,7 @@ import { MailService } from 'src/modules/mail/mail.service';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { TokenService } from './tokens/token.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class AuthService {
@@ -16,14 +17,27 @@ export class AuthService {
     private users: UsersService,
     private mail: MailService,
     private tokens: TokenService,
+    private upload: UploadService,
   ) {}
 
   // REGISTER
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, file?: Express.Multer.File) {
     const exists = await this.users.findByEmail(dto.email);
     if (exists) throw new BadRequestException('Email already in use');
 
-    const user = await this.users.create(dto);
+    // Handle profile image upload if provided
+    let profileImageUrl: string | undefined;
+    if (file) {
+      const uploadResult = await this.upload.upload(file);
+      // S3 returns 'url', local returns 'path'
+      profileImageUrl =
+        'url' in uploadResult ? uploadResult.url : uploadResult.path;
+    }
+
+    const user = await this.users.create({
+      ...dto,
+      profileImage: profileImageUrl,
+    });
     const tokenData = await this.tokens.signTokens(
       user._id.toString(),
       user.role,

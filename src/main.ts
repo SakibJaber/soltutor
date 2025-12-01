@@ -95,4 +95,8 @@ async function bootstrap() {
   logger.log(`🚀 Application is running on: http://localhost:${port}/api/v1`);
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  const logger = new Logger('Bootstrap');
+  logger.error('❌ Failed to start application', error);
+  process.exit(1);
+});

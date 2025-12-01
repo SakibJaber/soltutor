@@ -65,4 +65,18 @@ export class MailService {
       context: { otp },
     });
   }
+
+  async sendUserCredentialsEmail(
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+  ) {
+    return this.sendEmail({
+      to: email,
+      subject: 'Your Account Credentials - SQL Tutor',
+      template: 'user-credentials',
+      context: { email, password, firstName, lastName },
+    });
+  }
 }

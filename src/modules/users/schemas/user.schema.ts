@@ -27,6 +27,9 @@ export class User {
   @Prop({ default: true })
   isActive: boolean;
 
+  @Prop()
+  profileImage?: string;
+
   // hashed refresh token
   @Prop({ select: false })
   refreshToken?: string;
