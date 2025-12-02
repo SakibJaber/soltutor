@@ -160,6 +160,38 @@ export class UsersService {
     return this.userModel.findByIdAndUpdate(id, dto, { new: true });
   }
 
+  async updateProfile(userId: string, dto: any, file?: Express.Multer.File) {
+    // Handle profile image upload if provided
+    if (file) {
+      const uploadResult = await this.upload.upload(file);
+      dto.profileImage =
+        'url' in uploadResult ? uploadResult.url : uploadResult.path;
+    }
+
+    // Hash password if being updated
+    if (dto.password) {
+      dto.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    const updatedUser = await this.userModel.findByIdAndUpdate(userId, dto, {
+      new: true,
+    });
+
+    if (!updatedUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    return updatedUser;
+  }
+
+  async deleteProfile(userId: string) {
+    const user = await this.userModel.findByIdAndDelete(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return { message: 'Account deleted successfully' };
+  }
+
   async remove(id: string) {
     return this.userModel.findByIdAndDelete(id);
   }

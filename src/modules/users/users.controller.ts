@@ -19,6 +19,7 @@ import { GetUser } from '../../common/decorators/get-user.decorator';
 import { User } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { Role } from 'src/common/enum/user.role.enum';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -67,6 +68,25 @@ export class UsersController {
   @Get('me')
   async getMe(@GetUser() user: User) {
     return await user;
+  }
+
+  @Patch('me')
+  @UseInterceptors(FileInterceptor('image'))
+  async updateProfile(
+    @GetUser() user: User,
+    @Body() dto: UpdateProfileDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return await this.usersService.updateProfile(
+      user._id.toString(),
+      dto,
+      file,
+    );
+  }
+
+  @Delete('me')
+  async deleteAccount(@GetUser() user: User) {
+    return await this.usersService.deleteProfile(user._id.toString());
   }
 
   @UseGuards(RolesGuard)
