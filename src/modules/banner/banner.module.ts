@@ -1,0 +1,16 @@
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { BannerService } from './banner.service';
+import { BannerController } from './banner.controller';
+import { Banner, BannerSchema } from './schemas/banner.schema';
+import { UploadModule } from 'src/modules/upload/upload.module';
+
+@Module({
+  imports: [
+    MongooseModule.forFeature([{ name: Banner.name, schema: BannerSchema }]),
+    UploadModule,
+  ],
+  controllers: [BannerController],
+  providers: [BannerService],
+})
+export class BannerModule {}

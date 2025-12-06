@@ -8,7 +8,10 @@ import {
   Delete,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { BlogService } from './blog.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
@@ -54,8 +57,12 @@ export class BlogController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Post()
-  create(@Body() createBlogDto: CreateBlogDto) {
-    return this.blogService.create(createBlogDto);
+  @UseInterceptors(FileInterceptor('image'))
+  create(
+    @Body() createBlogDto: CreateBlogDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.blogService.create(createBlogDto, file);
   }
 
   /**
@@ -64,8 +71,13 @@ export class BlogController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBlogDto: UpdateBlogDto) {
-    return this.blogService.update(id, updateBlogDto);
+  @UseInterceptors(FileInterceptor('image'))
+  update(
+    @Param('id') id: string,
+    @Body() updateBlogDto: UpdateBlogDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.blogService.update(id, updateBlogDto, file);
   }
 
   /**

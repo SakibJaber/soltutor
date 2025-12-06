@@ -4,15 +4,21 @@ import { Model } from 'mongoose';
 import { Blog, BlogDocument } from './schemas/blog.schema';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class BlogService {
   constructor(
     @InjectModel(Blog.name)
     private readonly blogModel: Model<BlogDocument>,
+    private readonly uploadService: UploadService,
   ) {}
 
-  async create(createBlogDto: CreateBlogDto) {
+  async create(createBlogDto: CreateBlogDto, file?: Express.Multer.File) {
+    if (file) {
+      const uploadResult: any = await this.uploadService.upload(file);
+      createBlogDto.image = uploadResult.url || uploadResult.path;
+    }
     const blog = await this.blogModel.create(createBlogDto);
     return blog;
   }
@@ -59,7 +65,16 @@ export class BlogService {
     return blog;
   }
 
-  async update(id: string, updateBlogDto: UpdateBlogDto) {
+  async update(
+    id: string,
+    updateBlogDto: UpdateBlogDto,
+    file?: Express.Multer.File,
+  ) {
+    if (file) {
+      const uploadResult: any = await this.uploadService.upload(file);
+      updateBlogDto.image = uploadResult.url || uploadResult.path;
+    }
+
     const blog = await this.blogModel.findByIdAndUpdate(id, updateBlogDto, {
       new: true,
     });
