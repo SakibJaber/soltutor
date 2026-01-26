@@ -7,7 +7,7 @@ import { Role } from 'src/common/enum/user.role.enum';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { PageType } from 'src/common/enum/pagetype.enum';
 
-@Controller('pages')
+@Controller('')
 export class PagesController {
   constructor(private readonly pagesService: PagesService) {}
 
@@ -19,7 +19,7 @@ export class PagesController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.ADMIN)
   @Put('privacy-policy')
   updatePrivacyPolicy(@Body() updatePageDto: UpdatePageDto) {
     return this.pagesService.update(PageType.PRIVACY_POLICY, updatePageDto);
@@ -33,7 +33,7 @@ export class PagesController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.ADMIN)
   @Put('terms-and-conditions')
   updateTermsAndConditions(@Body() updatePageDto: UpdatePageDto) {
     return this.pagesService.update(
@@ -50,7 +50,7 @@ export class PagesController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.ADMIN)
   @Put('about-us')
   updateAboutUs(@Body() updatePageDto: UpdatePageDto) {
     return this.pagesService.update(PageType.ABOUT_US, updatePageDto);

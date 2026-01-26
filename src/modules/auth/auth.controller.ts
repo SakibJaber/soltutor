@@ -11,26 +11,18 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { LoginDto } from './dto/auth.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 import { User } from '../users/schemas/user.schema';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Public } from 'src/common/decorators/public.decorator';
 import { AuthGuard } from '@nestjs/passport';
+import { Role } from 'src/common/enum/user.role.enum';
 
 @Controller('auth')
 export class AuthController {
   constructor(private auth: AuthService) {}
-
-  @Post('register')
-  @Public()
-  @UseInterceptors(FileInterceptor('image'))
-  async register(
-    @Body() dto: RegisterDto,
-    @UploadedFile() file?: Express.Multer.File,
-  ) {
-    return await this.auth.register(dto, file);
-  }
 
   @Post('login')
   @Public()
@@ -54,6 +46,12 @@ export class AuthController {
   @Public()
   async verifyOtp(@Body() body: { email: string; otp: string }) {
     return await this.auth.verifyOtp(body.email, body.otp);
+  }
+
+  @Post('reset-password')
+  @Public()
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return await this.auth.resetPassword(dto);
   }
 
   @Post('refresh')

@@ -1,50 +1,74 @@
 import {
-  Body,
   Controller,
-  Delete,
   Get,
+  Post,
+  Body,
   Param,
   Patch,
-  Post,
-  Query,
+  Delete,
   UseGuards,
 } from '@nestjs/common';
 import { ContactService } from './contact.service';
 import { CreateContactDto } from './dto/create-contact.dto';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { Public } from 'src/common/decorators/public.decorator';
+import { UpdateBusinessInfoDto } from './dto/update-business-info.dto';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from 'src/common/enum/user.role.enum';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('contact')
 export class ContactController {
   constructor(private readonly contactService: ContactService) {}
 
   @Public()
-  @Post('submit')
-  submit(@Body() dto: CreateContactDto) {
-    return this.contactService.submit(dto);
+  @Post()
+  async createContact(@Body() createContactDto: CreateContactDto) {
+    const result = await this.contactService.createContact(createContactDto);
+    return {
+      message: 'Message sent successfully',
+      data: result,
+    };
   }
 
-  @UseGuards(RolesGuard)
+  @Get('messages')
   @Roles(Role.ADMIN)
-  @Get('admin')
-  getAll(@Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.contactService.findAll(page, limit);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  getAllContacts() {
+    return this.contactService.getAllContacts();
   }
 
-  @UseGuards(RolesGuard)
+  @Get('messages/:id')
   @Roles(Role.ADMIN)
-  @Patch('admin/:id/read')
-  markRead(@Param('id') id: string) {
-    return this.contactService.markRead(id);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  getContactById(@Param('id') id: string) {
+    return this.contactService.getContactById(id);
   }
 
-  @UseGuards(RolesGuard)
+  @Patch('messages/:id/read')
   @Roles(Role.ADMIN)
-  @Delete('admin/:id')
-  delete(@Param('id') id: string) {
-    return this.contactService.delete(id);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  markAsRead(@Param('id') id: string) {
+    return this.contactService.markAsRead(id);
+  }
+
+  @Delete('messages/:id')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  deleteContact(@Param('id') id: string) {
+    return this.contactService.deleteContact(id);
+  }
+
+  @Public()
+  @Get('business-info')
+  getBusinessInfo() {
+    return this.contactService.getBusinessInfo();
+  }
+
+  @Patch('business-info')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  updateBusinessInfo(@Body() updateBusinessInfoDto: UpdateBusinessInfoDto) {
+    return this.contactService.updateBusinessInfo(updateBusinessInfoDto);
   }
 }

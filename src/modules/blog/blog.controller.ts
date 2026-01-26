@@ -55,7 +55,7 @@ export class BlogController {
    * Create a new blog post (Admin only)
    */
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.ADMIN)
   @Post()
   @UseInterceptors(FileInterceptor('image'))
   create(
@@ -69,7 +69,7 @@ export class BlogController {
    * Update a blog post (Admin only)
    */
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.ADMIN)
   @Patch(':id')
   @UseInterceptors(FileInterceptor('image'))
   update(
@@ -84,7 +84,7 @@ export class BlogController {
    * Delete a blog post (Admin only)
    */
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.ADMIN)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.blogService.remove(id);

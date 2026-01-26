@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
@@ -8,6 +8,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { MailService } from '../mail/mail.service';
 import { UploadService } from '../upload/upload.service';
 import { PaginatedResponse } from '../../common/interfaces/pagination-response.interface';
+import { ConfigService } from '@nestjs/config';
+import { Role } from 'src/common/enum/user.role.enum';
 
 @Injectable()
 export class UsersService {
@@ -15,6 +17,7 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private mail: MailService,
     private upload: UploadService,
+    private config: ConfigService,
   ) {}
 
   async create(
@@ -66,10 +69,20 @@ export class UsersService {
     limit: number,
     role?: string,
     isActive?: boolean,
+    search?: string,
   ): Promise<PaginatedResponse<User>> {
     const query: any = {};
     if (role) query.role = role;
     if (isActive !== undefined) query.isActive = isActive;
+
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { email: searchRegex },
+      ];
+    }
 
     const data = await this.userModel
       .find(query)
@@ -79,7 +92,29 @@ export class UsersService {
 
     const count = await this.userModel.countDocuments(query);
 
-    return { data, total: count, page, limit };
+    return {
+      data,
+      meta: {
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit),
+        lastPage: Math.ceil(count / limit),
+      },
+    };
+  }
+
+  async findAllBySearch(search: string) {
+    const searchRegex = new RegExp(search, 'i');
+    return this.userModel
+      .find({
+        $or: [
+          { firstName: searchRegex },
+          { lastName: searchRegex },
+          { email: searchRegex },
+        ],
+      })
+      .exec();
   }
 
   async findOne(id: string) {
@@ -194,5 +229,31 @@ export class UsersService {
 
   async remove(id: string) {
     return this.userModel.findByIdAndDelete(id);
+  }
+
+  async seedAdmin() {
+    const adminEmail =
+      this.config.get<string>('ADMIN_EMAIL') || 'admin@admin.com';
+    const adminPassword =
+      this.config.get<string>('ADMIN_PASSWORD') || 'admin1234';
+
+    const existingAdmin = await this.userModel.findOne({ role: Role.ADMIN });
+    if (existingAdmin) {
+      console.log('Admin already exists.');
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    const admin = new this.userModel({
+      firstName: 'System',
+      lastName: 'Admin',
+      email: adminEmail,
+      password: hashedPassword,
+      role: Role.ADMIN,
+      isActive: true,
+    });
+
+    await admin.save();
+    console.log(`Admin seeded successfully with email: ${adminEmail}`);
   }
 }

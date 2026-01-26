@@ -46,6 +46,23 @@ export class HttpExceptionFilter implements ExceptionFilter {
       } else {
         message = exceptionResponse;
       }
+    } else if (this.isMongoError(exception)) {
+      // Handle MongoDB duplicate key error (E11000)
+      const mongoError = exception as any;
+      if (mongoError.code === 11000) {
+        status = HttpStatus.CONFLICT;
+        error = 'Conflict';
+
+        // Extract field name from error message
+        const field = this.extractDuplicateField(mongoError.message);
+        message = field
+          ? `A record with this ${field} already exists`
+          : 'A record with this value already exists';
+      } else {
+        // Handle other MongoDB errors
+        message = mongoError.message || 'Database error occurred';
+        error = mongoError.name || 'DatabaseError';
+      }
     } else if (exception instanceof Error) {
       message = exception.message;
       error = exception.name;
@@ -97,5 +114,31 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     return result;
+  }
+
+  private isMongoError(exception: unknown): boolean {
+    return (
+      exception !== null &&
+      typeof exception === 'object' &&
+      'name' in exception &&
+      (exception as any).name === 'MongoServerError'
+    );
+  }
+
+  private extractDuplicateField(errorMessage: string): string | null {
+    // MongoDB duplicate key error message format:
+    // "E11000 duplicate key error collection: dbname.collection index: field_1 dup key: { field: "value" }"
+    const match = errorMessage.match(/index: (\w+)_\d+/);
+    if (match && match[1]) {
+      return match[1];
+    }
+
+    // Alternative pattern: dup key: { field: "value" }
+    const keyMatch = errorMessage.match(/dup key: \{ (\w+):/);
+    if (keyMatch && keyMatch[1]) {
+      return keyMatch[1];
+    }
+
+    return null;
   }
 }

@@ -62,6 +62,7 @@ export class UsersController {
       paginationDto.limit ?? 10,
       role,
       isActiveBoolean,
+      paginationDto.search,
     );
   }
 
@@ -90,7 +91,7 @@ export class UsersController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN, Role.TUTOR)
+  @Roles(Role.ADMIN)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return await this.usersService.findOne(id);

@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { UsersService } from './modules/users/users.service';
 import helmet from 'helmet';
 import compression from 'compression';
 import { HttpExceptionFilter } from './common/exceptions/http-exception.filter';
@@ -91,8 +92,11 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
   app.enableShutdownHooks();
 
+  const usersService = app.get(UsersService);
+  await usersService.seedAdmin();
+
   await app.listen(port);
-  logger.log(`🚀 Application is running on: http://localhost:${port}/api/v1`);
+  logger.log(`🚀 Application is running on: http://10.10.20.22:${port}/api/v1`);
 }
 
 bootstrap().catch((error) => {

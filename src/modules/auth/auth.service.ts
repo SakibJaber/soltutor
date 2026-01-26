@@ -6,7 +6,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { MailService } from 'src/modules/mail/mail.service';
-import { RegisterDto, LoginDto } from './dto/auth.dto';
+import { LoginDto } from './dto/auth.dto';
 import { TokenService } from './tokens/token.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UploadService } from '../upload/upload.service';
@@ -19,37 +19,6 @@ export class AuthService {
     private tokens: TokenService,
     private upload: UploadService,
   ) {}
-
-  // REGISTER
-  async register(dto: RegisterDto, file?: Express.Multer.File) {
-    const exists = await this.users.findByEmail(dto.email);
-    if (exists) throw new BadRequestException('Email already in use');
-
-    // Handle profile image upload if provided
-    let profileImageUrl: string | undefined;
-    if (file) {
-      const uploadResult = await this.upload.upload(file);
-      // S3 returns 'url', local returns 'path'
-      profileImageUrl =
-        'url' in uploadResult ? uploadResult.url : uploadResult.path;
-    }
-
-    const user = await this.users.create({
-      ...dto,
-      profileImage: profileImageUrl,
-    });
-    const tokenData = await this.tokens.signTokens(
-      user._id.toString(),
-      user.role,
-    );
-
-    await this.users.setRefreshToken(
-      user._id.toString(),
-      await bcrypt.hash(tokenData.refreshToken, 10),
-    );
-
-    return { user, ...tokenData };
-  }
 
   // LOGIN
   async login(dto: LoginDto) {
@@ -132,18 +101,27 @@ export class AuthService {
     const user = await this.users.verifyOtp(email, otp);
     if (!user) throw new BadRequestException('Invalid or expired OTP');
 
-    return { message: 'OTP verified' };
+    const resetToken = await this.tokens.signResetToken(email);
+    return { message: 'OTP verified', resetToken };
   }
 
   // RESET PASSWORD
   async resetPassword(dto: ResetPasswordDto) {
-    const user = await this.users.verifyOtp(dto.email, dto.token);
+    let payload: any;
+    try {
+      payload = await this.tokens.verifyResetToken(dto.token);
+    } catch (error) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
 
-    if (!user) throw new BadRequestException('Invalid or expired OTP');
+    if (payload.type !== 'reset_password') {
+      throw new BadRequestException('Invalid token type');
+    }
 
-    const hashed = await bcrypt.hash(dto.newPassword, 10);
+    const user = await this.users.findByEmail(payload.email);
+    if (!user) throw new BadRequestException('User not found');
 
-    await this.users.update(user._id, { password: hashed });
+    await this.users.update(user._id.toString(), { password: dto.newPassword });
     await this.users.clearOtp(user.email);
 
     return { message: 'Password updated successfully' };

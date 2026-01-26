@@ -8,7 +8,10 @@ import {
   Delete,
   Query,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateTestimonialDto } from './dto/create-testimonial.dto';
 import { UpdateTestimonialDto } from './dto/update-testimonial.dto';
 import { TestimonialsService } from 'src/modules/testimonial/testimonial.service';
@@ -43,16 +46,25 @@ export class TestimonialsController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @Post()
-  create(@Body() dto: CreateTestimonialDto) {
-    return this.service.create(dto);
+  @UseInterceptors(FileInterceptor('image'))
+  create(
+    @Body() dto: CreateTestimonialDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.service.create(dto, file);
   }
 
   // ADMIN — update
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateTestimonialDto) {
-    return this.service.update(id, dto);
+  @UseInterceptors(FileInterceptor('image'))
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateTestimonialDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.service.update(id, dto, file);
   }
 
   // ADMIN — delete

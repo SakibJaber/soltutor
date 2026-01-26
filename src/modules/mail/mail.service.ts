@@ -79,4 +79,55 @@ export class MailService {
       context: { email, password, firstName, lastName },
     });
   }
+
+  async sendTuitionRequestCreatedEmail(
+    email: string,
+    parentName: string,
+    childName: string,
+    subject: string,
+    tutorName: string,
+    fees: number,
+    dashboardUrl: string,
+  ) {
+    return this.sendEmail({
+      to: email,
+      subject: 'New Tuition Request - SQL Tutor',
+      template: 'tuition-request-created',
+      context: {
+        parentName,
+        childName,
+        subject,
+        tutorName,
+        fees,
+        dashboardUrl,
+      },
+    });
+  }
+
+  async sendTuitionRequestRejectedEmail(
+    email: string,
+    childName: string,
+    reason: string,
+  ) {
+    return this.sendEmail({
+      to: email,
+      subject: 'Tuition Request Rejected - SQL Tutor',
+      template: 'tuition-request-rejected',
+      context: { childName, reason },
+    });
+  }
+
+  async sendTuitionRequestPaidEmail(
+    email: string,
+    childName: string,
+    amount: number,
+    transactionId: string,
+  ) {
+    return this.sendEmail({
+      to: email,
+      subject: 'Tuition Request Paid - SQL Tutor',
+      template: 'tuition-request-paid',
+      context: { childName, amount, transactionId },
+    });
+  }
 }

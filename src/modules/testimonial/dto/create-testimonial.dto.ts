@@ -13,4 +13,8 @@ export class CreateTestimonialDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  authorAvatar?: string;
 }

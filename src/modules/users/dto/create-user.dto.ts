@@ -26,10 +26,6 @@ export class CreateUserDto {
   password: string;
 
   @IsOptional()
-  @IsEnum(Role)
-  role?: Role;
-
-  @IsOptional()
   @IsString()
   profileImage?: string;
 }

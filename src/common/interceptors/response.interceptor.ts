@@ -28,23 +28,42 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
 
     return next.handle().pipe(
       map((data) => {
-        // Check if this is a paginated response
-        const isPaginated =
+        // Check if this is a paginated response with 'meta'
+        if (
+          data &&
+          typeof data === 'object' &&
+          'data' in data &&
+          'meta' in data
+        ) {
+          return {
+            success: true,
+            statusCode: response.statusCode,
+            message: data.message || 'Request successful',
+            data: data.data,
+            meta: {
+              total: data.meta.total,
+              page: data.meta.page,
+              limit: data.meta.limit,
+              totalPages: data.meta.lastPage || data.meta.totalPages,
+            },
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+        // Check if this is a paginated response with flat structure (legacy support if needed, or for UsersService before refactor)
+        if (
           data &&
           typeof data === 'object' &&
           'data' in data &&
           'total' in data &&
           'page' in data &&
-          'limit' in data;
-
-        if (isPaginated) {
-          // Calculate totalPages
+          'limit' in data
+        ) {
           const totalPages = Math.ceil(data.total / data.limit);
-
           return {
             success: true,
             statusCode: response.statusCode,
-            message: data?.message || 'Request successful',
+            message: data.message || 'Request successful',
             data: data.data,
             meta: {
               total: data.total,

@@ -16,6 +16,9 @@ export class Testimonial {
 
   @Prop({ default: true })
   isActive: boolean; // for showing/hiding in slider
+
+  @Prop()
+  authorAvatar?: string;
 }
 
 export const TestimonialSchema = SchemaFactory.createForClass(Testimonial);

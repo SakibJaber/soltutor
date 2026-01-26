@@ -1,536 +1,422 @@
-# Postman API Endpoints - Tutor Platform
+# SQL Tutor API Documentation
 
-Base URL: `http://localhost:3000`
+Comprehensive guide for testing the SQL Tutor API endpoints using Postman or any other HTTP client.
 
-## Flow Overview
+## Table of Contents
 
-1. **Register Parent** → Create User
-2. **Login** → Get Access Token
-3. **Create Parent Profile** → Add Children
-4. **Submit Consultation** → Parent request
-5. **Admin: Schedule Meeting** → Update consultation
-6. **Admin: Create Package** → Learning package
-7. **Create Checkout Session** → Stripe payment
-8. **Webhook** → Activate package
-9. **Admin: Manage Blog** → Create/publish blog posts
+1. [Authentication & Authorization](#1-authentication--authorization)
+2. [Users Module](#2-users-module)
+3. [Supporting Modules](#3-supporting-modules) (Contact, Contact Info, FAQ, Blog, Banner, Testimonial, Video Management, Pages)
+4. [Upload Module](#4-upload-module)
+5. [Notification Module](#5-notification-module)
+6. [Common Response Formats](#6-common-response-formats)
+7. [Testing Workflows](#7-testing-workflows)
 
 ---
 
-## 1. Authentication
+## 1. Authentication & Authorization
 
-### Register User (Parent)
+Base URL: `/api/v1/auth`
 
-```
-POST /auth/register
-Content-Type: application/json
+### User Roles
 
+- `admin`: Full system access
+
+### 1. Login
+
+**POST** `/auth/login`
+**Access:** Public
+
+**Request Body (JSON):**
+
+```json
 {
-  "firstName": "John",
-  "lastName": "Doe",
-  "email": "parent@example.com",
-  "password": "SecurePass123!",
-  "role": "PARENTS"
+  "email": "admin@admin.com",
+  "password": "admin1234"
 }
 ```
 
-### Register User (Admin)
+### 2. Logout
 
-```
-POST /auth/register
-Content-Type: application/json
+**POST** `/auth/logout`
+**Access:** Authenticated (Bearer Token)
 
+### 3. Send OTP (Password Reset)
+
+**POST** `/auth/send-otp`
+**Access:** Public
+
+**Request Body (JSON):**
+
+```json
 {
-  "firstName": "Admin",
-  "lastName": "User",
-  "email": "admin@example.com",
-  "password": "AdminPass123!",
-  "role": "ADMIN"
+  "email": "admin@admin.com"
 }
 ```
 
-### Login
+### 4. Verify OTP
 
-```
-POST /auth/login
-Content-Type: application/json
+**POST** `/auth/verify-otp`
+**Access:** Public
 
+**Request Body (JSON):**
+
+```json
 {
-  "email": "parent@example.com",
-  "password": "SecurePass123!"
-}
-
-Response:
-{
-  "accessToken": "eyJhbGc...",
-  "refreshToken": "eyJhbGc...",
-  "user": { ... }
+  "email": "admin@admin.com",
+  "otp": "123456"
 }
 ```
 
-**Note:** Save the `accessToken` for subsequent requests.
+### 5. Reset Password
+
+**POST** `/auth/reset-password`
+**Access:** Public
+
+**Request Body (JSON):**
+
+```json
+{
+  "token": "RESET_TOKEN_FROM_VERIFY_OTP",
+  "newPassword": "newSecurePassword123"
+}
+```
+
+### 6. Refresh Token
+
+**POST** `/auth/refresh`
+**Headers:** `Authorization: Bearer <refreshToken>`
 
 ---
 
-## 2. Parent Profile & Children
+## 2. Users Module
 
-### Create Parent Profile with Children
+Base URL: `/api/v1/users`
 
-```
-POST /parents
-Authorization: Bearer {accessToken}
-Content-Type: application/json
+### 1. Create User (Admin Only)
 
+**POST** `/users`
+**Access:** `ADMIN`
+**Request Body (Multipart/Form-Data):**
+
+- `firstName`: "Jane"
+- `lastName`: "Doe"
+- `email`: "jane.doe@example.com"
+- `password`: "securePassword123"
+- `image`: [File Upload] (Optional)
+
+### 2. Get All Users
+
+**GET** `/users?page=1&limit=10&role=admin&search=jane`
+**Access:** `ADMIN`
+
+### 3. Get Current User Profile
+
+**GET** `/users/me`
+**Access:** Authenticated
+
+### 4. Update Current User Profile
+
+**PATCH** `/users/me`
+**Access:** Authenticated
+**Request Body (Multipart/Form-Data):**
+
+- `firstName`: "Jane Updated"
+- `lastName`: "Doe Updated"
+- `image`: [File Upload] (Optional)
+
+### 5. Delete My Account
+
+**DELETE** `/users/me`
+**Access:** Authenticated
+
+### 6. Get User by ID
+
+**GET** `/users/:id`
+**Access:** `ADMIN`
+
+### 7. Update User by ID
+
+**PATCH** `/users/:id`
+**Access:** `ADMIN`
+**Request Body (JSON):**
+
+```json
 {
-  "userId": "USER_ID_FROM_REGISTRATION",
-  "phoneNumber": "+1234567890",
-  "address": "123 Main St, City, Country",
-  "children": [
-    {
-      "name": "Alice Doe",
-      "age": 10,
-      "grade": "5th Grade",
-      "subjectsOfInterest": ["Math", "Science"]
-    },
-    {
-      "name": "Bob Doe",
-      "age": 8,
-      "grade": "3rd Grade",
-      "subjectsOfInterest": ["English", "Art"]
-    }
-  ]
+  "firstName": "Updated Name",
+  "isActive": false
 }
+```
 
-Response:
+### 8. Remove User by ID
+
+**DELETE** `/users/:id`
+**Access:** `ADMIN`
+
+---
+
+## 3. Supporting Modules
+
+### Contact Info
+
+Base URL: `/api/v1/contact-info`
+
+- **GET** `/contact-info` (Public) - Get frontend contact section info.
+- **PATCH** `/contact-info` (Admin)
+  **Request Body (JSON):**
+  ```json
+  {
+    "email": "contact@sqltutor.com",
+    "phone": "+1234567890",
+    "addressLine1": "123 SQL Street",
+    "addressLine2": "Suite 100",
+    "city": "Tech City"
+  }
+  ```
+
+### Pages (Static Content)
+
+Base URL: `/api/v1`
+
+- **GET** `/privacy-policy` (Public)
+- **PUT** `/privacy-policy` (Admin)
+  **Request Body (JSON):**
+  ```json
+  {
+    "content": "<h1>Privacy Policy</h1><p>Updated content...</p>",
+    "isActive": true
+  }
+  ```
+- **GET** `/terms-and-conditions` (Public)
+- **PUT** `/terms-and-conditions` (Admin)
+  **Request Body (JSON):**
+  ```json
+  {
+    "content": "<h1>Terms and Conditions</h1><p>Updated content...</p>",
+    "isActive": true
+  }
+  ```
+- **GET** `/about-us` (Public)
+- **PUT** `/about-us` (Admin)
+  **Request Body (JSON):**
+  ```json
+  {
+    "content": "<h1>About Us</h1><p>Updated content...</p>",
+    "isActive": true
+  }
+  ```
+
+### Video Management
+
+Base URL: `/api/v1/video`
+
+- **POST** `/video` (Admin)
+  **Request Body (Multipart/Form-Data):**
+  - `title`: "Introduction to SQL"
+  - `description`: "A beginner's guide to SQL basics."
+  - `file`: [Video File Upload]
+- **GET** `/video` (Public) - Get all videos.
+- **GET** `/video/:id` (Public) - Get video by ID.
+- **PATCH** `/video/:id` (Admin)
+  **Request Body (Multipart/Form-Data):**
+  - `title`: "Updated Title"
+  - `file`: [Optional New Video File]
+- **DELETE** `/video/:id` (Admin) - Remove video.
+
+### Blog
+
+Base URL: `/api/v1/blog`
+
+- **POST** `/blog` (Admin)
+  **Request Body (Multipart/Form-Data):**
+  - `title`: "Mastering Joins"
+  - `content`: "Detailed explanation of SQL joins..."
+  - `image`: [Image File Upload]
+- **GET** `/blog` (Public) - Get all posts.
+- **GET** `/blog/:id` (Public) - Get post by ID.
+- **PATCH** `/blog/:id` (Admin)
+  **Request Body (Multipart/Form-Data):**
+  - `title`: "Updated Blog Title"
+  - `image`: [Optional New Image File]
+- **DELETE** `/blog/:id` (Admin) - Remove post.
+
+### FAQ
+
+Base URL: `/api/v1/faq`
+
+- **POST** `/faq` (Admin)
+  **Request Body (JSON):**
+  ```json
+  {
+    "question": "What is SQL?",
+    "answer": "Structured Query Language...",
+    "isActive": true
+  }
+  ```
+- **GET** `/faq` (Public)
+- **PATCH** `/faq/:id` (Admin)
+- **DELETE** `/faq/:id` (Admin)
+
+### Banner
+
+Base URL: `/api/v1/banner`
+
+- **POST** `/banner` (Admin)
+  **Request Body (JSON):**
+  ```json
+  {
+    "title": "Welcome to SQL Tutor",
+    "videoUrl": "https://youtube.com/..."
+  }
+  ```
+- **GET** `/banner` (Public)
+
+### Testimonial
+
+Base URL: `/api/v1/testimonial`
+
+- **POST** `/testimonial` (Admin)
+  **Request Body (Multipart/Form-Data):**
+  - `quote`: "Great platform!"
+  - `authorName`: "John Smith"
+  - `authorTitle`: "Data Analyst"
+  - `image`: [File Upload] (Optional)
+  - `isActive`: true (Optional)
+- **GET** `/testimonial` (Public)
+- **PATCH** `/testimonial/:id` (Admin)
+  **Request Body (Multipart/Form-Data):**
+  - `quote`: "Updated quote"
+  - `image`: [Optional New Avatar File]
+
+### Contact (Submissions)
+
+Base URL: `/api/v1/contact`
+
+- **POST** `/contact` (Public)
+  **Request Body (JSON):**
+  ```json
+  {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com",
+    "phone": "+1234567890",
+    "message": "I have a question about the courses."
+  }
+  ```
+- **GET** `/contact` (Admin) - View submissions.
+
+---
+
+## 4. Upload Module
+
+Base URL: `/api/v1/upload`
+
+### 1. Regular File Upload
+
+**POST** `/upload/file`
+**Access:** Authenticated
+**Request Body (Multipart/Form-Data):**
+
+- `file`: [File Upload]
+
+### 2. Upload for User
+
+**POST** `/upload/user/:userId/:type`
+**Access:** Public (or as per logic)
+**Path Params:**
+
+- `userId`: ID of the user
+- `type`: `general`, `images`, or `documents`
+  **Request Body (Multipart/Form-Data):**
+- `file`: [File Upload]
+
+### 3. Delete File
+
+**DELETE** `/upload`
+**Access:** Authenticated
+**Request Body (JSON):**
+
+```json
 {
-  "_id": "PARENT_ID",
-  "user": { ... },
-  "children": [
-    {
-      "_id": "CHILD_1_ID",
-      "name": "Alice Doe",
-      ...
-    },
-    {
-      "_id": "CHILD_2_ID",
-      "name": "Bob Doe",
-      ...
-    }
-  ]
+  "key": "path/to/file.jpg"
 }
-```
-
-### Get All Parents
-
-```
-GET /parents
-Authorization: Bearer {accessToken}
-```
-
-### Get Single Parent
-
-```
-GET /parents/{parentId}
-Authorization: Bearer {accessToken}
 ```
 
 ---
 
-## 3. Consultation Requests
+## 5. Notification Module
 
-### Create Consultation (Parent)
+Base URL: `/api/v1/notifications`
 
-```
-POST /consultations
-Authorization: Bearer {accessToken}
-Content-Type: application/json
+### 1. Create Notification
 
+**POST** `/notifications`
+**Access:** Authenticated
+**Request Body (JSON):**
+
+```json
 {
-  "parentId": "PARENT_ID",
-  "childIds": ["CHILD_1_ID", "CHILD_2_ID"],
-  "preferredSubjects": ["Math", "Science", "English"],
-  "goals": "Help my children improve in STEM subjects and build confidence in problem-solving"
-}
-
-Response:
-{
-  "_id": "CONSULTATION_ID",
-  "parentId": "PARENT_ID",
-  "childIds": ["CHILD_1_ID", "CHILD_2_ID"],
-  "status": "PENDING_REVIEW",
-  ...
+  "title": "New Message",
+  "body": "You have a new message from admin.",
+  "userId": "TARGET_USER_ID",
+  "metadata": {
+    "link": "/dashboard"
+  }
 }
 ```
 
-### Get All Consultations
+_Note: Non-admins can only send notifications to themselves._
 
-```
-GET /consultations
-Authorization: Bearer {accessToken}
-```
+### 2. Get My Notifications
 
-### Get Single Consultation
+**GET** `/notifications`
+**Access:** Authenticated
 
-```
-GET /consultations/{consultationId}
-Authorization: Bearer {accessToken}
-```
+### 3. Mark as Read
 
-### Update Consultation - Schedule Meeting (Admin)
+**PATCH** `/notifications/:id/read`
+**Access:** Authenticated (Owner only)
 
-```
-PATCH /consultations/{consultationId}
-Authorization: Bearer {accessToken}
-Content-Type: application/json
+---
 
+## 6. Common Response Formats
+
+### Success Response
+
+```json
 {
-  "status": "SCHEDULED",
-  "meeting": {
-    "meetingUrl": "https://zoom.us/j/123456789",
-    "scheduledAt": "2025-12-10T14:00:00.000Z"
+  "success": true,
+  "statusCode": 200,
+  "message": "Success",
+  "data": { ... }
+}
+```
+
+### Paginated Response
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Success",
+  "data": [ ... ],
+  "meta": {
+    "total": 100,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 10
   }
 }
 ```
 
 ---
 
-## 4. Learning Packages
-
-### Create Package (Admin)
-
-```
-POST /packages
-Authorization: Bearer {accessToken}
-Content-Type: application/json
-
-{
-  "parentId": "PARENT_ID",
-  "consultationRequestId": "CONSULTATION_ID",
-  "children": [
-    {
-      "childId": "CHILD_1_ID",
-      "subjects": ["Math", "Science"],
-      "hoursPerWeek": 4
-    },
-    {
-      "childId": "CHILD_2_ID",
-      "subjects": ["English"],
-      "hoursPerWeek": 2
-    }
-  ],
-  "totalHoursPerWeek": 6,
-  "durationInWeeks": 12,
-  "price": {
-    "amount": 500,
-    "currency": "usd"
-  }
-}
-
-Response:
-{
-  "_id": "PACKAGE_ID",
-  "status": "DRAFT",
-  ...
-}
-```
-
-### Get All Packages
-
-```
-GET /packages
-Authorization: Bearer {accessToken}
-```
-
-### Get Single Package
-
-```
-GET /packages/{packageId}
-Authorization: Bearer {accessToken}
-```
-
-### Update Package
-
-```
-PATCH /packages/{packageId}
-Authorization: Bearer {accessToken}
-Content-Type: application/json
-
-{
-  "status": "PENDING_PAYMENT",
-  "durationInWeeks": 16
-}
-```
-
----
-
-## 5. Tutors
-
-### Create Tutor Profile
-
-```
-POST /tutors
-Authorization: Bearer {accessToken}
-Content-Type: application/json
-
-{
-  "userId": "TUTOR_USER_ID",
-  "subjects": ["Math", "Physics", "Chemistry"],
-  "bio": "Experienced STEM tutor with 5+ years of teaching",
-  "qualifications": ["MSc in Mathematics", "Certified Teacher"],
-  "availability": {
-    "monday": ["9:00-12:00", "14:00-17:00"],
-    "wednesday": ["9:00-12:00", "14:00-17:00"],
-    "friday": ["9:00-12:00"]
-  }
-}
-```
-
-### Get All Tutors
-
-```
-GET /tutors
-Authorization: Bearer {accessToken}
-```
-
-### Get Single Tutor
-
-```
-GET /tutors/{tutorId}
-Authorization: Bearer {accessToken}
-```
-
----
-
-## 6. Payments (Stripe)
-
-### Create Checkout Session
-
-**Note:** You'll need to implement this endpoint in PaymentsController
-
-```
-POST /payments/create-checkout-session
-Authorization: Bearer {accessToken}
-Content-Type: application/json
-
-{
-  "packageId": "PACKAGE_ID",
-  "customerEmail": "parent@example.com"
-}
-
-Response:
-{
-  "sessionId": "cs_test_...",
-  "url": "https://checkout.stripe.com/pay/cs_test_..."
-}
-```
-
-### Stripe Webhook (Public - No Auth)
-
-```
-POST /payments/webhook
-Stripe-Signature: {signature_from_stripe}
-Content-Type: application/json
-
-{
-  "id": "evt_...",
-  "type": "checkout.session.completed",
-  "data": {
-    "object": {
-      "id": "cs_test_...",
-      "metadata": {
-        "packageId": "PACKAGE_ID"
-      },
-      ...
-    }
-  }
-}
-```
-
----
-
-## Testing Sequence
-
-### Step 1: Setup
-
-1. Register Parent user → Save `userId`
-2. Register Admin user
-3. Login as Parent → Save `accessToken`
-
-### Step 2: Parent Flow
-
-4. Create Parent profile with children → Save `parentId`, `childIds`
-5. Create Consultation → Save `consultationId`
-
-### Step 3: Admin Flow (Login as Admin)
-
-6. Login as Admin → Get admin `accessToken`
-7. Get consultations → Find the created one
-8. Update consultation with meeting details
-
-### Step 4: Package Flow (Admin)
-
-9. Create Learning Package → Save `packageId`
-10. Verify package status is `DRAFT`
-
-### Step 5: Payment Flow (Parent)
-
-11. Login as Parent
-12. Create Checkout Session (you need to implement this endpoint)
-13. Simulate Webhook call (or use Stripe CLI)
-14. Verify package status changed to `ACTIVE`
-
----
-
-## Additional Implementation Needed
-
-### Create Checkout Session Endpoint
-
-Add this to `PaymentsController`:
-
-```typescript
-@Post('create-checkout-session')
-async createCheckoutSession(
-  @Body() body: { packageId: string; customerEmail: string },
-) {
-  const pkg = await this.packagesService.findOne(body.packageId);
-
-  const session = await this.stripeService.createCheckoutSession(
-    body.packageId,
-    `Learning Package - ${pkg.totalHoursPerWeek}hrs/week`,
-    pkg.price.amount,
-    pkg.price.currency,
-    body.customerEmail,
-  );
-
-  return {
-    sessionId: session.id,
-    url: session.url,
-  };
-}
-```
-
----
-
-## Environment Variables Required
-
-```env
-# Stripe
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-
-# Frontend URL for Stripe redirects
-FRONTEND_URL=http://localhost:3000
-```
-
----
-
-## 7. Blog Posts
-
-### Get All Published Blog Posts (Public)
-
-```
-GET /blog?page=1&limit=10&category=Tutorial&tags=NestJS&search=authentication
-# No authentication required
-```
-
-### Get Single Blog Post (Public)
-
-```
-GET /blog/getting-started-with-nestjs
-# or by ID
-GET /blog/{blogId}
-# No authentication required
-```
-
-### Get Categories (Public)
-
-```
-GET /blog/meta/categories
-```
-
-### Get Tags (Public)
-
-```
-GET /blog/meta/tags
-```
-
-### Increment View Count (Public)
-
-```
-PATCH /blog/{blogId}/view
-```
-
-### Create Blog Post (Admin)
-
-```
-POST /blog
-Authorization: Bearer {accessToken}
-Content-Type: application/json
-
-{
-  "title": "Getting Started with NestJS",
-  "content": "This is the full blog content...",
-  "excerpt": "A brief introduction to NestJS",
-  "author": "USER_ID",
-  "category": "Tutorial",
-  "tags": ["NestJS", "Backend", "TypeScript"],
-  "featuredImage": "https://example.com/image.jpg",
-  "status": "draft",
-  "metaDescription": "Learn NestJS basics",
-  "metaKeywords": ["nestjs", "tutorial"]
-}
-```
-
-### Get All Blog Posts (Admin)
-
-```
-GET /blog/admin/all?page=1&limit=10&status=draft&category=Tutorial
-Authorization: Bearer {accessToken}
-```
-
-### Update Blog Post (Admin)
-
-```
-PATCH /blog/{blogId}
-Authorization: Bearer {accessToken}
-Content-Type: application/json
-
-{
-  "title": "Updated Title",
-  "content": "Updated content...",
-  "category": "Advanced Tutorial"
-}
-```
-
-### Publish Blog Post (Admin)
-
-```
-PATCH /blog/{blogId}/publish
-Authorization: Bearer {accessToken}
-```
-
-### Unpublish Blog Post (Admin)
-
-```
-PATCH /blog/{blogId}/unpublish
-Authorization: Bearer {accessToken}
-```
-
-### Delete Blog Post (Admin)
-
-```
-DELETE /blog/{blogId}
-Authorization: Bearer {accessToken}
-```
-
----
-
-## Notes
-
-1. **Authentication**: All endpoints except `/auth/*` and `/payments/webhook` require `Authorization: Bearer {accessToken}` header
-2. **Role-Based Access**: Some endpoints should be restricted by role (Admin, Parent, Tutor)
-3. **IDs**: Replace placeholders like `USER_ID`, `PARENT_ID` with actual MongoDB ObjectIds from responses
-4. **Stripe Testing**: Use Stripe test mode keys and test card `4242 4242 4242 4242`
-5. **Webhook Testing**: Use Stripe CLI to forward webhooks to localhost:
-   ```bash
-   stripe listen --forward-to localhost:3000/payments/webhook
-   ```
+## 7. Testing Workflows
+
+### Admin Management Workflow
+
+1. **Login** with Seeded Admin (`/auth/login`)
+2. **Create New Admin** (`/users`)
+3. **Get All Admins** (`/users`)
+4. **Update Profile** (`/users/me`)
+5. **Logout** (`/auth/logout`)

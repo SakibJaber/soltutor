@@ -3,6 +3,7 @@
 /node_modules
 /build
 /public/uploads
+#POSTMAN_API_ENDPOINTS.md
 
 # Logs
 logs

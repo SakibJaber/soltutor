@@ -4,15 +4,21 @@ import { Model } from 'mongoose';
 import { Testimonial, TestimonialDocument } from './schemas/testimonial.schema';
 import { CreateTestimonialDto } from './dto/create-testimonial.dto';
 import { UpdateTestimonialDto } from './dto/update-testimonial.dto';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class TestimonialsService {
   constructor(
     @InjectModel(Testimonial.name)
     private readonly testimonialModel: Model<TestimonialDocument>,
+    private readonly uploadService: UploadService,
   ) {}
 
-  async create(dto: CreateTestimonialDto) {
+  async create(dto: CreateTestimonialDto, file?: Express.Multer.File) {
+    if (file) {
+      const uploadResult: any = await this.uploadService.upload(file);
+      dto.authorAvatar = uploadResult.url || uploadResult.path;
+    }
     return await this.testimonialModel.create(dto);
   }
 
@@ -46,7 +52,15 @@ export class TestimonialsService {
     };
   }
 
-  async update(id: string, dto: UpdateTestimonialDto) {
+  async update(
+    id: string,
+    dto: UpdateTestimonialDto,
+    file?: Express.Multer.File,
+  ) {
+    if (file) {
+      const uploadResult: any = await this.uploadService.upload(file);
+      dto.authorAvatar = uploadResult.url || uploadResult.path;
+    }
     const updated = await this.testimonialModel.findByIdAndUpdate(id, dto, {
       new: true,
     });

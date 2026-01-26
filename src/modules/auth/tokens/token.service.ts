@@ -32,4 +32,18 @@ export class TokenService {
       secret: this.config.get<string>('jwt.refreshSecret'),
     });
   }
+
+  async signResetToken(email: string): Promise<string> {
+    const payload = { email, type: 'reset_password' };
+    return this.jwt.signAsync(payload, {
+      secret: this.config.get<string>('jwt.secret'), 
+      expiresIn: '15m',
+    });
+  }
+
+  async verifyResetToken(token: string): Promise<any> {
+    return this.jwt.verifyAsync(token, {
+      secret: this.config.get<string>('jwt.secret'),
+    });
+  }
 }

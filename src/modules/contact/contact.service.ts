@@ -1,78 +1,83 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Contact, ContactDocument } from './schemas/contact.schema';
 import { CreateContactDto } from './dto/create-contact.dto';
-import { MailService } from '../mail/mail.service';
+import { Contact } from './schema/contact.schema';
+import { UpdateBusinessInfoDto } from './dto/update-business-info.dto';
+import { BusinessInfo } from 'src/modules/contact/schema/business-info.schema';
 
 @Injectable()
 export class ContactService {
   constructor(
-    @InjectModel(Contact.name)
-    private readonly contactModel: Model<ContactDocument>,
-    private readonly mailService: MailService,
+    @InjectModel(Contact.name) private contactModel: Model<Contact>,
+    @InjectModel(BusinessInfo.name)
+    private businessInfoModel: Model<BusinessInfo>,
   ) {}
 
-  async submit(dto: CreateContactDto) {
-    const saved = await this.contactModel.create(dto);
-
-    // Email notification to admin
-    await this.mailService.sendEmail({
-      to: process.env.MAIL_ADMIN || 'admin@weblaud.com',
-      subject: 'New Contact Message',
-      template: 'contact',
-      context: {
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        email: dto.email,
-        phone: dto.phone,
-        message: dto.message,
-      },
-    });
-
-    return saved;
+  async createContact(createContactDto: CreateContactDto) {
+    const createdContact = new this.contactModel(createContactDto);
+    return await createdContact.save();
   }
 
-  async findAll(page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
-
-    const [items, total] = await Promise.all([
-      this.contactModel
-        .find()
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-
-      this.contactModel.countDocuments(),
-    ]);
-
-    return {
-      items,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+  async getAllContacts() {
+    return await this.contactModel.find().sort({ createdAt: -1 }).exec();
   }
 
-  async markRead(id: string) {
-    const updated = await this.contactModel.findByIdAndUpdate(
-      id,
-      { status: 'read' },
-      { new: true },
-    );
-
-    if (!updated) throw new NotFoundException('Message not found');
-
-    return updated;
+  async getContactById(id: string) {
+    const contact = await this.contactModel.findById(id).exec();
+    if (!contact) {
+      throw new NotFoundException(`Contact with ID ${id} not found`);
+    }
+    return contact;
   }
 
-  async delete(id: string) {
-    const deleted = await this.contactModel.findByIdAndDelete(id);
-    if (!deleted) throw new NotFoundException('Message not found');
-    return { deleted: true };
+  async markAsRead(id: string) {
+    const contact = await this.contactModel
+      .findByIdAndUpdate(id, { isRead: true }, { new: true })
+      .exec();
+
+    if (!contact) {
+      throw new NotFoundException(`Contact with ID ${id} not found`);
+    }
+
+    return contact;
+  }
+
+  async deleteContact(id: string) {
+    const result = await this.contactModel.findByIdAndDelete(id).exec();
+    if (!result) {
+      throw new NotFoundException(`Contact with ID ${id} not found`);
+    }
+    return result;
+  }
+
+  async getBusinessInfo() {
+    let businessInfo = await this.businessInfoModel.findOne().exec();
+
+    // If no business info exists, create default one
+    if (!businessInfo) {
+      businessInfo = new this.businessInfoModel({
+        phone: '',
+        email: '',
+        State: '',
+        City: '',
+        Country: '',
+      });
+      await businessInfo.save();
+    }
+
+    return businessInfo;
+  }
+
+  async updateBusinessInfo(updateBusinessInfoDto: UpdateBusinessInfoDto) {
+    let businessInfo = await this.businessInfoModel.findOne().exec();
+
+    if (!businessInfo) {
+      businessInfo = new this.businessInfoModel(updateBusinessInfoDto);
+    } else {
+      businessInfo.set(updateBusinessInfoDto);
+    }
+
+    return await businessInfo.save();
   }
 }
