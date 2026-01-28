@@ -89,7 +89,9 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   // API prefix
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['/'],
+  });
   app.enableShutdownHooks();
 
   const usersService = app.get(UsersService);
@@ -104,4 +106,3 @@ bootstrap().catch((error) => {
   logger.error('❌ Failed to start application', error);
   process.exit(1);
 });
-
