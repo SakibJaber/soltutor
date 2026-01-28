@@ -96,7 +96,7 @@ async function bootstrap() {
   await usersService.seedAdmin();
 
   await app.listen(port);
-  logger.log(`🚀 Application is running on: http://10.10.20.22:${port}/api/v1`);
+  logger.log(`🚀 Application is running on: http://localhost:${port}/api/v1`);
 }
 
 bootstrap().catch((error) => {
@@ -104,3 +104,4 @@ bootstrap().catch((error) => {
   logger.error('❌ Failed to start application', error);
   process.exit(1);
 });
+
