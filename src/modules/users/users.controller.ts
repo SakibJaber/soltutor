@@ -17,7 +17,7 @@ import { UsersService } from './users.service';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 import { User } from './schemas/user.schema';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -31,15 +31,15 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
-  @Post()
+  @Roles(Role.SUPER_ADMIN)
+  @Post('admin')
   @UseInterceptors(FileInterceptor('image'))
-  async create(
-    @Body() dto: CreateUserDto,
+  async createAdmin(
+    @Body() dto: CreateAdminDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    // Capture plain password and request credentials email for admin-created users
-    return await this.usersService.create(dto, {
+    // Only super admin can create admin users
+    return await this.usersService.createAdmin(dto, {
       sendCredentialsEmail: true,
       plainPassword: dto.password,
       file,
@@ -47,7 +47,7 @@ export class UsersController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Get()
   async findAll(
     @Query() paginationDto: PaginationDto,
@@ -91,21 +91,21 @@ export class UsersController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return await this.usersService.findOne(id);
   }
 
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Patch(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return await this.usersService.update(id, dto);
   }
 
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return await this.usersService.remove(id);

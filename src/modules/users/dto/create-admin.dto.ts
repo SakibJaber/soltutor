@@ -1,14 +1,12 @@
 import {
   IsEmail,
-  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
-import { Role } from 'src/common/enum/user.role.enum';
 
-export class CreateUserDto {
+export class CreateAdminDto {
   @IsNotEmpty()
   @IsString()
   firstName: string;

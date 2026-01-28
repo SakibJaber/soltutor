@@ -3,7 +3,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from './schemas/user.schema';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { MailService } from '../mail/mail.service';
 import { UploadService } from '../upload/upload.service';
@@ -20,49 +19,7 @@ export class UsersService {
     private config: ConfigService,
   ) {}
 
-  async create(
-    dto: CreateUserDto,
-    options?: {
-      sendCredentialsEmail?: boolean;
-      plainPassword?: string;
-      file?: Express.Multer.File;
-    },
-  ) {
-    // Handle profile image upload if provided
-    let profileImageUrl: string | undefined;
-    if (options?.file) {
-      const uploadResult = await this.upload.upload(options.file);
-      // S3 returns 'url', local returns 'path'
-      profileImageUrl =
-        'url' in uploadResult ? uploadResult.url : uploadResult.path;
-    }
 
-    // Hash the password before saving
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const user = new this.userModel({
-      ...dto,
-      password: hashedPassword,
-      profileImage: profileImageUrl || dto.profileImage,
-    });
-    const savedUser = await user.save();
-
-    // Only send credentials email if explicitly requested (for admin-created users)
-    if (options?.sendCredentialsEmail) {
-      const passwordToSend = options.plainPassword || dto.password;
-      this.mail
-        .sendUserCredentialsEmail(
-          savedUser.email,
-          passwordToSend,
-          savedUser.firstName,
-          savedUser.lastName,
-        )
-        .catch((error) => {
-          console.error('Failed to send credentials email:', error);
-        });
-    }
-
-    return savedUser;
-  }
 
   async findAll(
     page: number,
@@ -233,27 +190,75 @@ export class UsersService {
 
   async seedAdmin() {
     const adminEmail =
-      this.config.get<string>('ADMIN_EMAIL') || 'admin@admin.com';
+      this.config.get<string>('SUPER_ADMIN_EMAIL') || 'amer@theseedsoflearning.com';
     const adminPassword =
-      this.config.get<string>('ADMIN_PASSWORD') || 'admin1234';
+      this.config.get<string>('SUPER_ADMIN_PASSWORD') || 'superadmin1234';
 
-    const existingAdmin = await this.userModel.findOne({ role: Role.ADMIN });
-    if (existingAdmin) {
-      console.log('Admin already exists.');
+    const existingSuperAdmin = await this.userModel.findOne({
+      role: Role.SUPER_ADMIN,
+    });
+    if (existingSuperAdmin) {
+      console.log('Super Admin already exists.');
       return;
     }
 
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
-    const admin = new this.userModel({
-      firstName: 'System',
+    const superAdmin = new this.userModel({
+      firstName: 'Super',
       lastName: 'Admin',
       email: adminEmail,
       password: hashedPassword,
-      role: Role.ADMIN,
+      role: Role.SUPER_ADMIN,
       isActive: true,
     });
 
-    await admin.save();
-    console.log(`Admin seeded successfully with email: ${adminEmail}`);
+    await superAdmin.save();
+    console.log(`Super Admin seeded successfully with email: ${adminEmail}`);
+  }
+
+  async createAdmin(
+    dto: any,
+    options?: {
+      sendCredentialsEmail?: boolean;
+      plainPassword?: string;
+      file?: Express.Multer.File;
+    },
+  ) {
+    // Handle profile image upload if provided
+    let profileImageUrl: string | undefined;
+    if (options?.file) {
+      const uploadResult = await this.upload.upload(options.file);
+      // S3 returns 'url', local returns 'path'
+      profileImageUrl =
+        'url' in uploadResult ? uploadResult.url : uploadResult.path;
+    }
+
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const admin = new this.userModel({
+      ...dto,
+      password: hashedPassword,
+      role: Role.ADMIN,
+      profileImage: profileImageUrl || dto.profileImage,
+      isActive: true,
+    });
+    const savedAdmin = await admin.save();
+
+    // Send credentials email if requested
+    if (options?.sendCredentialsEmail) {
+      const passwordToSend = options.plainPassword || dto.password;
+      this.mail
+        .sendUserCredentialsEmail(
+          savedAdmin.email,
+          passwordToSend,
+          savedAdmin.firstName,
+          savedAdmin.lastName,
+        )
+        .catch((error) => {
+          console.error('Failed to send credentials email:', error);
+        });
+    }
+
+    return savedAdmin;
   }
 }
