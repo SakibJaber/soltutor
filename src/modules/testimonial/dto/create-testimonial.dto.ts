@@ -1,4 +1,5 @@
 import { IsString, IsBoolean, IsOptional } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateTestimonialDto {
   @IsString()
@@ -11,6 +12,14 @@ export class CreateTestimonialDto {
   authorTitle: string;
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const val = value.trim().toLowerCase();
+      if (val === 'true') return true;
+      if (val === 'false') return false;
+    }
+    return value;
+  })
   @IsBoolean()
   isActive?: boolean;
 

@@ -22,24 +22,22 @@ export class TestimonialsService {
     return await this.testimonialModel.create(dto);
   }
 
-  async findAllPublic() {
-    return await this.testimonialModel
-      .find({ isActive: true })
-      .sort({ createdAt: -1 })
-      .lean();
-  }
-
-  async findAllAdmin(page = 1, limit = 20) {
+  async findAll(page = 1, limit = 20, isActive?: boolean) {
     const skip = (page - 1) * limit;
 
+    const query: any = {};
+    if (isActive !== undefined) {
+      query.isActive = isActive;
+    }
+
     const items = await this.testimonialModel
-      .find()
+      .find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
-    const total = await this.testimonialModel.countDocuments();
+    const total = await this.testimonialModel.countDocuments(query);
 
     return {
       items,

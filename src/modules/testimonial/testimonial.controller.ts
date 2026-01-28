@@ -24,22 +24,15 @@ import { Role } from 'src/common/enum/user.role.enum';
 export class TestimonialsController {
   constructor(private readonly service: TestimonialsService) {}
 
-  // PUBLIC API (for front-end slider)
+  // GET list (Public & Admin)
   @Public()
   @Get()
-  getPublicTestimonials() {
-    return this.service.findAllPublic();
-  }
-
-  // ADMIN — paginated list
-  @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
-  @Get('admin')
-  getAdminTestimonials(
+  findAll(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @Query('isActive') isActive?: boolean,
   ) {
-    return this.service.findAllAdmin(page, limit);
+    return this.service.findAll(page, limit, isActive);
   }
 
   // ADMIN — create
