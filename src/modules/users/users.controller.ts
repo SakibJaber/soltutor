@@ -47,22 +47,43 @@ export class UsersController {
   }
 
   @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Get('admin/:id')
+  async findOneAdmin(@Param('id') id: string) {
+    return await this.usersService.findOne(id);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Patch('admin/:id')
+  async updateAdmin(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+    return await this.usersService.update(id, dto);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Delete('admin/:id')
+  async removeAdmin(@Param('id') id: string) {
+    return await this.usersService.remove(id);
+  }
+
+  @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Get()
-  async findAll(
-    @Query() paginationDto: PaginationDto,
-    @Query('role') role?: string,
-    @Query('isActive') isActive?: string,
-  ) {
+  async findAll(@Query() query: PaginationDto) {
     const isActiveBoolean =
-      isActive === 'true' ? true : isActive === 'false' ? false : undefined;
+      query.isActive === 'true'
+        ? true
+        : query.isActive === 'false'
+          ? false
+          : undefined;
 
     return await this.usersService.findAll(
-      paginationDto.page ?? 1,
-      paginationDto.limit ?? 10,
-      role,
+      query.page ?? 1,
+      query.limit ?? 10,
+      query.role,
       isActiveBoolean,
-      paginationDto.search,
+      query.search,
     );
   }
 

@@ -13,6 +13,14 @@ export class PaginationDto {
   search?: string;
 
   @IsOptional()
+  @IsString()
+  role?: string;
+
+  @IsOptional()
+  @IsString()
+  isActive?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
